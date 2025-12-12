@@ -4,7 +4,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
 import re
-from datetime import datetime
 
 # Database configuration
 DATABASE_URL = os.getenv(
@@ -110,6 +109,106 @@ def clean_data(df):
     return df
 
 
+def create_tables():
+    """Create database tables if they don't exist"""
+    print("Creating database tables...")
+    Base.metadata.create_all(engine)
+    print("Tables created successfully!")
+
+
+def insert_data(df):
+    """
+    Insert data into PostgreSQL database using SQLAlchemy ORM.
+    NOTE: Existing data will be deleted before insertion.
+
+    Args:
+        df: pandas DataFrame with trivia questions
+    """
+    session = Session()
+
+    try:
+        print("Inserting data into database...")
+
+        # Clear existing data
+        session.query(TriviaQuestion).delete()
+        session.commit()
+        print("Cleared existing data.")
+
+        # Batch insert for better performance
+        batch_size = 1000
+        total_records = 0
+
+        for i in range(0, len(df), batch_size):
+            batch = df.iloc[i : i + batch_size]
+            questions = []
+
+            for _, row in batch.iterrows():
+                question = TriviaQuestion(
+                    show_number=(
+                        int(row["Show Number"]) if pd.notna(row["Show Number"]) else 0
+                    ),
+                    air_date=row["Air Date"] if pd.notna(row["Air Date"]) else None,
+                    round=str(row["Round"]) if pd.notna(row["Round"]) else None,
+                    category=(
+                        str(row["Category"]) if pd.notna(row["Category"]) else None
+                    ),
+                    value=int(row["Value"]) if pd.notna(row["Value"]) else None,
+                    question=(
+                        str(row["Question"]) if pd.notna(row["Question"]) else None
+                    ),
+                    answer=str(row["Answer"]) if pd.notna(row["Answer"]) else None,
+                )
+                questions.append(question)
+
+            session.bulk_save_objects(questions)
+            session.commit()
+            total_records += len(questions)
+
+            if (i + batch_size) % 10000 == 0:
+                print(f"Inserted {total_records} records...")
+
+        print(f"Successfully inserted {total_records} records into the database!")
+
+    except Exception as e:
+        session.rollback()
+        print(f"Error inserting data: {e}")
+        raise
+    finally:
+        session.close()
+
+
+def verify_data():
+    """
+    Verify the inserted data by querying the database and printing summary statistics.
+    """
+    session = Session()
+
+    try:
+        total_count = session.query(TriviaQuestion).count()
+        print(f"\nVerification: Total records in database: {total_count}")
+
+        # Show a few sample records
+        sample_records = session.query(TriviaQuestion).limit(5).all()
+        print("\nSample records:")
+        for record in sample_records:
+            print(
+                f"  - Show: {record.show_number}, Category: {record.category}, Value: {record.value}"
+            )
+
+        # Show value distribution
+        print("\nValue distribution:")
+        for value in [200, 400, 600, 800, 1000, 1200]:
+            count = (
+                session.query(TriviaQuestion)
+                .filter(TriviaQuestion.value == value)
+                .count()
+            )
+            print(f"  {value}: {count} questions")
+
+    finally:
+        session.close()
+
+
 def main():
     csv_path = os.path.join(os.path.dirname(__file__), "data", "JEOPARDY_CSV.csv")
 
@@ -119,14 +218,19 @@ def main():
 
     try:
         # Step 1: Create tables
+        create_tables()
 
         # Step 2: Load and filter data
+        df = load_and_filter_data(csv_path, max_value=1200)
 
         # Step 3: Clean data
+        df = clean_data(df)
 
         # Step 4: Insert data into database
+        insert_data(df)
 
         # Step 5: Verify insertion
+        verify_data()
 
         print("\nData ingestion completed successfully!")
 
