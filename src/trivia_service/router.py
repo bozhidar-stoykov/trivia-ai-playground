@@ -14,12 +14,14 @@ from schemas.trivia_schemas import (
     QuestionDetailResponse,
     VerifyAnswerRequest,
     VerifyAnswerResponse,
+    AgentPlayResponse,
 )
 from trivia_service.service import (
     get_random_question,
     get_question_by_id,
     verify_user_answer,
     format_value,
+    agent_play_trivia,
 )
 
 router = APIRouter(prefix="/api/v1", tags=["trivia"])
@@ -97,3 +99,25 @@ async def verify_answer(request: VerifyAnswerRequest, db: Session = Depends(get_
     return VerifyAnswerResponse(
         is_correct=result["is_correct"], ai_response=result["ai_response"]
     )
+
+
+@router.post("/agent-play/", response_model=AgentPlayResponse)
+async def agent_play(db: Session = Depends(get_db)):
+    """
+    Watch an AI agent select and answer a random trivia question.
+
+    Different AI agents have different specialties (history, geography, science, etc.)
+    and skill levels (expert, intermediate, novice). The system automatically selects
+    an appropriate agent based on the question category.
+
+    Returns:
+        AgentPlayResponse with the agent's name, question, answer, and whether it was correct.
+    """
+    result = agent_play_trivia(db)
+
+    if not result:
+        raise HTTPException(
+            status_code=404, detail="No questions available for agent to play"
+        )
+
+    return AgentPlayResponse(**result)
