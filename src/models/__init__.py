@@ -1,3 +1,3 @@
-from src.models.trivia_question import TriviaQuestion
+from models.trivia_question import TriviaQuestion
 
 __all__ = ["TriviaQuestion"]
