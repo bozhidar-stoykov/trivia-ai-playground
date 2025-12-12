@@ -86,3 +86,36 @@ class VerifyAnswerResponse(BaseModel):
                 "ai_response": "Yes, Copernicus proposed the heliocentric theory.",
             }
         }
+
+
+class AgentPlayResponse(BaseModel):
+    """Response model for AI agent playing trivia"""
+
+    agent_name: str = Field(..., description="Name of the AI agent")
+    agent_specialty: str = Field(..., description="Agent's specialty area")
+    skill_level: str = Field(
+        ..., description="Agent's skill level (expert, intermediate, novice)"
+    )
+    question_id: int = Field(..., description="The question ID")
+    category: str = Field(..., description="Question category")
+    question: str = Field(..., description="The trivia question")
+    ai_answer: str = Field(..., description="The AI agent's answer")
+    correct_answer: str = Field(..., description="The correct answer")
+    is_correct: bool = Field(..., description="Whether the AI agent answered correctly")
+    reasoning: str = Field(..., description="AI agent's reasoning or explanation")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "agent_name": "HistoryBot-Expert",
+                "agent_specialty": "history",
+                "skill_level": "expert",
+                "question_id": 42,
+                "category": "ANCIENT ROME",
+                "question": "Built in 312 B.C. to link Rome & the South of Italy, it's still in use today",
+                "ai_answer": "The Appian Way",
+                "correct_answer": "Appian Way",
+                "is_correct": True,
+                "reasoning": "The Appian Way (Via Appia) was one of the earliest and most important Roman roads.",
+            }
+        }
