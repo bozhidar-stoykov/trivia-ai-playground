@@ -59,3 +59,30 @@ class ErrorResponse(BaseModel):
         json_schema_extra = {
             "example": {"detail": "No questions found matching the criteria"}
         }
+
+
+class VerifyAnswerRequest(BaseModel):
+    """Request model for answer verification"""
+
+    question_id: int = Field(..., description="The question ID to verify against")
+    user_answer: str = Field(..., description="The user's answer in free text")
+
+    class Config:
+        json_schema_extra = {
+            "example": {"question_id": 7, "user_answer": "The answer is Copernics"}
+        }
+
+
+class VerifyAnswerResponse(BaseModel):
+    """Response model for answer verification"""
+
+    is_correct: bool = Field(..., description="Whether the answer is correct")
+    ai_response: str = Field(..., description="AI explanation of the verification")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "is_correct": True,
+                "ai_response": "Yes, Copernicus proposed the heliocentric theory.",
+            }
+        }
