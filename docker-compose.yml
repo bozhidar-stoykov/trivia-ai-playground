@@ -37,6 +37,25 @@ services:
     networks:
       - trivia_network
 
+  # FastAPI Application Service
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: trivia_api
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/trivia_db
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
+    networks:
+      - trivia_network
+    restart: unless-stopped
+
 volumes:
   postgres_data:
     driver: local
